@@ -4,6 +4,8 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const { createUserRouter } = require('./routes/userRoutes');
+const { createVideoRouter } = require('./routes/videoRoutes');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mockserver_dev_secret';
 const JWT_EXPIRES_IN = '24h';
@@ -12,7 +14,7 @@ const revokedTokens = new Set();
 
 const port = process.env.PORT || 3000;
 const dbFile = process.env.DB_FILE || path.join(__dirname, 'db.json');
-const defaultData = { videos: [] };
+const defaultData = { users: [], videos: [] };
 const requiredVideoFields = [
   'thumbnailUrl',
   'authorImageUrl',
@@ -308,218 +310,18 @@ async function startServer() {
     });
   });
 
-  app.post('/login', async (req, res) => {
-    const { username, password } = req.body ?? {};
+  app.use(createUserRouter({
+    db,
+    jwt,
+    JWT_SECRET,
+    JWT_EXPIRES_IN,
+    revokedTokens,
+  }));
 
-    if (!username || !password) {
-      return res.status(400).json({
-        error: 'username and password are required.',
-      });
-    }
-
-    await db.read();
-    const user = (db.data.users ?? []).find(
-      (u) => u.username === username && u.password === password,
-    );
-
-    if (!user) {
-      return res.status(401).json({
-        error: 'Invalid username or password.',
-      });
-    }
-
-    const payload = { sub: user.id, username: user.username, name: user.name };
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-
-    return res.json({
-      message: 'Login successful.',
-      token,
-      user: { id: user.id, username: user.username, name: user.name },
-    });
-  });
-
-  app.post('/logout', (req, res) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(400).json({
-        error: 'Authorization header with Bearer token is required.',
-      });
-    }
-
-    const token = authHeader.slice(7);
-
-    try {
-      jwt.verify(token, JWT_SECRET);
-    } catch {
-      return res.status(401).json({
-        error: 'Token is invalid or already expired.',
-      });
-    }
-
-    revokedTokens.add(token);
-    return res.json({ message: 'Logout successful.' });
-  });
-
-  app.get('/get-videos', async (_req, res) => {
-    await db.read();
-    res.json(db.data.videos ?? []);
-  });
-
-  app.get('/get-video/:id', async (req, res) => {
-    const videoId = Number.parseInt(req.params.id, 10);
-
-    if (Number.isNaN(videoId)) {
-      return res.status(400).json({
-        error: 'Invalid video ID. ID must be a number.',
-      });
-    }
-
-    await db.read();
-    const video = (db.data.videos ?? []).find((item) => item.id === videoId);
-
-    if (!video) {
-      return res.status(404).json({
-        error: `Video with ID ${videoId} not found.`,
-      });
-    }
-
-    return res.json(video);
-  });
-
-  app.get('/get-videos-paginated', async (req, res) => {
-    const page = Number.parseInt(req.query.page, 10) || 1;
-    const limit = Number.parseInt(req.query.limit, 10) || 10;
-
-    if (page < 1 || limit < 1) {
-      return res.status(400).json({
-        error: 'page and limit must be positive integers.',
-      });
-    }
-
-    const safeLimit = Math.min(limit, 100);
-    const offset = (page - 1) * safeLimit;
-
-    await db.read();
-    const videos = db.data.videos ?? [];
-    const total = videos.length;
-    const totalPages = Math.max(1, Math.ceil(total / safeLimit));
-    const data = videos.slice(offset, offset + safeLimit);
-
-    return res.json({
-      page,
-      limit: safeLimit,
-      total,
-      totalPages,
-      hasNextPage: page < totalPages,
-      hasPrevPage: page > 1,
-      data,
-    });
-  });
-
-  app.get('/search', async (req, res) => {
-    const query = (req.query.q || '').trim().toLowerCase();
-
-    if (!query) {
-      return res.status(400).json({
-        error: 'Search query is required. Use ?q=your_search_term',
-      });
-    }
-
-    await db.read();
-    const results = (db.data.videos ?? []).filter(video => {
-      const titleMatch = video.title.toLowerCase().includes(query);
-      const metaMatch = video.meta.toLowerCase().includes(query);
-      const channelMatch = video.channelName.toLowerCase().includes(query);
-      return titleMatch || metaMatch || channelMatch;
-    });
-
-    return res.json(results);
-  });
-
-  const createVideo = async (req, res) => {
-    const result = normalizeVideo(req.body);
-
-    if (result.error) {
-      return res.status(400).json({
-        error: result.error,
-        missingFields: result.missingFields ?? [],
-      });
-    }
-
-    await db.read();
-    const nextId = db.data.videos.length > 0
-      ? Math.max(...db.data.videos.map(v => v.id || 0)) + 1
-      : 1;
-    const videoWithId = { id: nextId, ...result.video };
-    db.data.videos.push(videoWithId);
-    await db.write();
-
-    return res.status(201).json(videoWithId);
-  };
-
-  app.post('/videos', createVideo);
-  app.post('/add-video', createVideo);
-
-  app.put('/update-video/:id', async (req, res) => {
-    const videoId = parseInt(req.params.id, 10);
-
-    if (isNaN(videoId)) {
-      return res.status(400).json({
-        error: 'Invalid video ID. ID must be a number.',
-      });
-    }
-
-    const result = normalizeVideo(req.body);
-
-    if (result.error) {
-      return res.status(400).json({
-        error: result.error,
-        missingFields: result.missingFields ?? [],
-      });
-    }
-
-    await db.read();
-    const videoIndex = db.data.videos.findIndex(v => v.id === videoId);
-
-    if (videoIndex === -1) {
-      return res.status(404).json({
-        error: `Video with ID ${videoId} not found.`,
-      });
-    }
-
-    db.data.videos[videoIndex] = { id: videoId, ...result.video };
-    await db.write();
-
-    return res.json(db.data.videos[videoIndex]);
-  });
-
-  app.delete('/delete-video/:id', async (req, res) => {
-    const videoId = parseInt(req.params.id, 10);
-
-    if (Number.isNaN(videoId)) {
-      return res.status(400).json({
-        error: 'Invalid video ID. ID must be a number.',
-      });
-    }
-
-    await db.read();
-    const videoIndex = db.data.videos.findIndex((video) => video.id === videoId);
-
-    if (videoIndex === -1) {
-      return res.status(404).json({
-        error: `Video with ID ${videoId} not found.`,
-      });
-    }
-
-    const [deletedVideo] = db.data.videos.splice(videoIndex, 1);
-    await db.write();
-
-    return res.json({
-      message: 'Video deleted successfully.',
-      video: deletedVideo,
-    });
-  });
+  app.use(createVideoRouter({
+    db,
+    normalizeVideo,
+  }));
 
   app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
