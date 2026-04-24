@@ -1,0 +1,122 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "admin123",
+      "name": "Admin User"
+    },
+    {
+      "id": 2,
+      "username": "user",
+      "password": "user123",
+      "name": "Regular User"
+    }
+  ],
+  "videos": [
+    {
+      "id": 3,
+      "thumbnailUrl": "https://img.youtube.com/vi/46cXFUzR9XM/maxresdefault.jpg",
+      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnh53ZRIGnyzC28QrfuggCINb3cfNbNWo4Uc6qR9=s48-c-k-c0x00ffffff-no-rj",
+      "title": "Bella Ciao Full Song | La Casa De Papel | Money Heist | Netflix India",
+      "channelName": "Netflix",
+      "meta": "10M Views • 11 Months Ago"
+    },
+    {
+      "id": 4,
+      "thumbnailUrl": "https://img.youtube.com/vi/d2na6sCyM5Q/maxresdefault.jpg",
+      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnhESPVEatju_1yE-03-KLeSrnSLc5yy0RcvhPd5Lg=s48-c-k-c0x00ffffff-no-rj",
+      "title": "DON'T EVER GIVE UP - Elon Musk (Motivational Video)",
+      "channelName": "Chispa Motivation",
+      "meta": "10M Views • 1 Month Ago"
+    },
+    {
+      "id": 5,
+      "thumbnailUrl": "https://img.youtube.com/vi/2Ji-clqUYnA/maxresdefault.jpg",
+      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwniaHN7MZyFEiNvdHuKMzIWnDF604Z2--O4GCMq-FA=s48-c-k-c0x00ffffff-no-rj",
+      "title": "Javascript Fundamentals",
+      "channelName": "Coding Addict",
+      "meta": "179K • 8 Months Ago"
+    },
+    {
+      "id": 6,
+      "thumbnailUrl": "https://img.youtube.com/vi/3PHXvlpOkf4/maxresdefault.jpg",
+      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnifaQZvAunS0OFb2y_cieoVjLCVjqQW8Exf3BC1gg=s48-c-k-c0x00ffffff-no-rj",
+      "title": "Build 15 JavaScript Projects - Vanilla JavaScript Course",
+      "channelName": "freeCodeCamp.org",
+      "meta": "470K Views • 8 Months Ago"
+    },
+    {
+      "id": 7,
+      "thumbnailUrl": "https://img.youtube.com/vi/CVClHLwv-4I/maxresdefault.jpg",
+      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnhIz_0Su6HhW6Ym50QCroJCAnF10X9xnnMDboN2=s48-c-k-c0x00ffffff-no-rj",
+      "title": "Build Real Time Face Detection With JavaScript",
+      "channelName": "Web Dev Simplified",
+      "meta": "875K Views • 1 Year Ago"
+    },
+    {
+      "id": 8,
+      "thumbnailUrl": "https://img.youtube.com/vi/ulprqHHWlng/maxresdefault.jpg",
+      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnifaQZvAunS0OFb2y_cieoVjLCVjqQW8Exf3BC1gg=s48-c-k-c0x00ffffff-no-rj",
+      "title": "AWS Basics for Beginners - Full Course",
+      "channelName": "freeCodeCamp.org",
+      "meta": "36K Views • 1 Day Ago"
+    },
+    {
+      "id": 9,
+      "thumbnailUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
+      "authorImageUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
+      "title": "new form title",
+      "channelName": "new form",
+      "meta": "100k views"
+    },
+    {
+      "id": 10,
+      "thumbnailUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
+      "authorImageUrl": "/profile.png",
+      "title": "Top 5 Programming Languages to Learn in 2021 | Best Programming Languages to Learn",
+      "channelName": "FutureCoders",
+      "meta": "10M Views • 3 Months Ago"
+    },
+    {
+      "id": 11,
+      "thumbnailUrl": "https://img.youtube.com/vi/YpTmcCBBdTE/maxresdefault.jpg",
+      "authorImageUrl": "https://img.youtube.com/vi/YpTmcCBBdTE/maxresdefault.jpg",
+      "title": "freshstart",
+      "channelName": "testbed",
+      "meta": "100k views"
+    },
+    {
+      "id": 12,
+      "thumbnailUrl": "https://img.youtube.com/vi/YpTmcCBBdTE/maxresdefault.jpg",
+      "authorImageUrl": "https://img.youtube.com/vi/YpTmcCBBdTE/maxresdefault.jpg",
+      "title": "asdfsafddsfdd",
+      "channelName": "asddsfsd",
+      "meta": "asdfdsff"
+    },
+    {
+      "id": 13,
+      "thumbnailUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
+      "authorImageUrl": "/profile.png",
+      "title": "Top 5 Programming Languages to Learn in 2021 | Best Programming Languages to Learn",
+      "channelName": "FutureCoders",
+      "meta": "10M Views • 3 Months Ago"
+    },
+    {
+      "id": 14,
+      "thumbnailUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
+      "authorImageUrl": "/profile.png",
+      "title": "Top 5 Programming Languages to Learn in 2021 | Best Programming Languages to Learn",
+      "channelName": "FutureCoders",
+      "meta": "10M Views • 3 Months Ago"
+    },
+    {
+      "id": 15,
+      "thumbnailUrl": "https://img.youtube.com/vi/2Ji-clqUYnA/maxresdefault.jpg",
+      "authorImageUrl": "https://img.youtube.com/vi/2Ji-clqUYnA/maxresdefault.jpg",
+      "title": "asddss",
+      "channelName": "sadsda",
+      "meta": "asdsasadsaddsas"
+    }
+  ]
+}
