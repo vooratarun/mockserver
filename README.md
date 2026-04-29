@@ -35,6 +35,17 @@ Base URL: `http://localhost:3000`
   - Description: Logout current user token
   - Headers: `Authorization: Bearer <token>`
 
+- `POST /change-password`
+  - Description: Change password for logged-in user
+  - Headers: `Authorization: Bearer <token>`
+  - Request body:
+    ```json
+    {
+      "oldPassword": "admin123",
+      "newPassword": "admin1234"
+    }
+    ```
+
 ### Video Routes
 
 - `GET /get-videos`
@@ -50,6 +61,10 @@ Base URL: `http://localhost:3000`
   - Query params:
     - `page` (number, default: 1)
     - `limit` (number, default: 10, max: 100)
+    - `categoryId` (number, optional; filter videos by category)
+
+- `GET /get-videos-paginated?page=1&limit=10&categoryId=1`
+  - Description: Get paginated videos for a specific category
 
 - `GET /search?q=keyword`
   - Description: Search videos by `title`, `meta`, or `channelName`

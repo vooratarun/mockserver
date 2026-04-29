@@ -4,13 +4,22 @@
       "id": 1,
       "username": "admin",
       "password": "admin123",
-      "name": "Admin User"
+      "name": "Admin User",
+      "role": "admin"
     },
     {
       "id": 2,
       "username": "user",
       "password": "user123",
-      "name": "Regular User"
+      "name": "Regular User",
+      "role": "user"
+    },
+    {
+      "id": 3,
+      "username": "newname",
+      "password": "tarun123",
+      "name": "newname",
+      "role": "user"
     }
   ],
   "likedVideos": [
@@ -35,102 +44,159 @@
       "videoId": 4
     }
   ],
-  "videos": [
+  "comments": [
+    {
+      "id": 1,
+      "videoId": 1,
+      "userId": 1,
+      "username": "admin",
+      "text": "Great video!",
+      "createdAt": "2026-04-29T11:49:44.821Z",
+      "updatedAt": "2026-04-29T13:15:54.291Z"
+    },
+    {
+      "id": 2,
+      "videoId": 1,
+      "userId": 1,
+      "username": "admin",
+      "text": "Amazing content!",
+      "createdAt": "2026-04-29T11:49:45.024Z"
+    },
+    {
+      "id": 3,
+      "videoId": 1,
+      "userId": 1,
+      "username": "admin",
+      "text": "Great video!",
+      "createdAt": "2026-04-29T13:04:05.717Z"
+    },
     {
       "id": 4,
-      "thumbnailUrl": "https://img.youtube.com/vi/d2na6sCyM5Q/maxresdefault.jpg",
-      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnhESPVEatju_1yE-03-KLeSrnSLc5yy0RcvhPd5Lg=s48-c-k-c0x00ffffff-no-rj",
-      "title": "DON'T EVER GIVE UP - Elon Musk (Motivational Video)",
-      "channelName": "Chispa Motivation",
-      "meta": "10M Views • 1 Month Ago"
+      "videoId": 1,
+      "userId": 1,
+      "username": "admin",
+      "text": "Great video! Yes",
+      "createdAt": "2026-04-29T13:11:37.826Z",
+      "updatedAt": "2026-04-29T13:17:27.615Z"
     },
     {
       "id": 5,
-      "thumbnailUrl": "https://img.youtube.com/vi/2Ji-clqUYnA/maxresdefault.jpg",
-      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwniaHN7MZyFEiNvdHuKMzIWnDF604Z2--O4GCMq-FA=s48-c-k-c0x00ffffff-no-rj",
-      "title": "Javascript Fundamentals",
-      "channelName": "Coding Addict",
-      "meta": "179K • 8 Months Ago"
+      "videoId": 1,
+      "userId": 1,
+      "username": "admin",
+      "text": "new comment",
+      "createdAt": "2026-04-29T13:15:23.380Z"
     },
     {
       "id": 6,
-      "thumbnailUrl": "https://img.youtube.com/vi/3PHXvlpOkf4/maxresdefault.jpg",
-      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnifaQZvAunS0OFb2y_cieoVjLCVjqQW8Exf3BC1gg=s48-c-k-c0x00ffffff-no-rj",
-      "title": "Build 15 JavaScript Projects - Vanilla JavaScript Course",
-      "channelName": "freeCodeCamp.org",
-      "meta": "470K Views • 8 Months Ago"
+      "videoId": 1,
+      "userId": 2,
+      "username": "user",
+      "text": "user comment updated",
+      "createdAt": "2026-04-29T13:18:08.462Z",
+      "updatedAt": "2026-04-29T13:18:23.697Z"
     },
     {
       "id": 7,
-      "thumbnailUrl": "https://img.youtube.com/vi/CVClHLwv-4I/maxresdefault.jpg",
-      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnhIz_0Su6HhW6Ym50QCroJCAnF10X9xnnMDboN2=s48-c-k-c0x00ffffff-no-rj",
-      "title": "Build Real Time Face Detection With JavaScript",
-      "channelName": "Web Dev Simplified",
-      "meta": "875K Views • 1 Year Ago"
+      "videoId": 3,
+      "userId": 1,
+      "username": "admin",
+      "text": "new comment",
+      "createdAt": "2026-04-29T13:34:29.735Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "Action",
+      "description": "High-energy and thrilling content"
     },
     {
-      "id": 8,
-      "thumbnailUrl": "https://img.youtube.com/vi/ulprqHHWlng/maxresdefault.jpg",
-      "authorImageUrl": "https://yt3.ggpht.com/ytc/AAUvwnifaQZvAunS0OFb2y_cieoVjLCVjqQW8Exf3BC1gg=s48-c-k-c0x00ffffff-no-rj",
-      "title": "AWS Basics for Beginners - Full Course",
-      "channelName": "freeCodeCamp.org",
-      "meta": "36K Views • 1 Day Ago"
+      "id": 2,
+      "name": "Drama",
+      "description": "Story-driven and emotional content"
     },
     {
-      "id": 9,
-      "thumbnailUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
-      "authorImageUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
-      "title": "new form title",
-      "channelName": "new form",
-      "meta": "100k views"
+      "id": 3,
+      "name": "Fantasy",
+      "description": "Imaginative and fictional worlds"
     },
     {
-      "id": 10,
-      "thumbnailUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
-      "authorImageUrl": "/profile.png",
-      "title": "Top 5 Programming Languages to Learn in 2021 | Best Programming Languages to Learn",
-      "channelName": "FutureCoders",
-      "meta": "10M Views • 3 Months Ago"
+      "id": 4,
+      "name": "Music",
+      "description": "Music and fictional worlds"
     },
     {
-      "id": 11,
-      "thumbnailUrl": "https://img.youtube.com/vi/YpTmcCBBdTE/maxresdefault.jpg",
-      "authorImageUrl": "https://img.youtube.com/vi/YpTmcCBBdTE/maxresdefault.jpg",
-      "title": "freshstart",
-      "channelName": "testbed",
-      "meta": "100k views"
+      "id": 5,
+      "name": "Technology",
+      "description": "All tech related videos"
     },
     {
-      "id": 12,
-      "thumbnailUrl": "https://img.youtube.com/vi/YpTmcCBBdTE/maxresdefault.jpg",
-      "authorImageUrl": "https://img.youtube.com/vi/YpTmcCBBdTE/maxresdefault.jpg",
-      "title": "asdfsafddsfdd",
-      "channelName": "asddsfsd",
-      "meta": "asdfdsff"
+      "id": 6,
+      "name": "New",
+      "description": "New category"
+    }
+  ],
+  "videos": [
+    {
+      "id": 1,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "title": "video1",
+      "channelName": "channel1",
+      "meta": "10kViews",
+      "categoryId": 1,
+      "categoryName": "Action"
     },
     {
-      "id": 13,
-      "thumbnailUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
-      "authorImageUrl": "/profile.png",
-      "title": "Top 5 Programming Languages to Learn in 2021 | Best Programming Languages to Learn",
-      "channelName": "FutureCoders",
-      "meta": "10M Views • 3 Months Ago"
+      "id": 2,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "title": "fantasy",
+      "channelName": "fantasy",
+      "meta": "100k",
+      "categoryId": 1,
+      "categoryName": "Action"
     },
     {
-      "id": 14,
-      "thumbnailUrl": "https://img.youtube.com/vi/PpXUTUXU7Qc/maxresdefault.jpg",
-      "authorImageUrl": "/profile.png",
-      "title": "Top 5 Programming Languages to Learn in 2021 | Best Programming Languages to Learn",
-      "channelName": "FutureCoders",
-      "meta": "10M Views • 3 Months Ago"
+      "id": 3,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "title": "thrid",
+      "channelName": "video",
+      "meta": "Music",
+      "categoryId": 1,
+      "categoryName": "Action"
     },
     {
-      "id": 15,
-      "thumbnailUrl": "https://img.youtube.com/vi/2Ji-clqUYnA/maxresdefault.jpg",
-      "authorImageUrl": "https://img.youtube.com/vi/2Ji-clqUYnA/maxresdefault.jpg",
-      "title": "asddss",
-      "channelName": "sadsda",
-      "meta": "asdsasadsaddsas"
+      "id": 4,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "title": "four",
+      "channelName": "four",
+      "meta": "asdfasfd",
+      "categoryId": 3,
+      "categoryName": "Fantasy"
+    },
+    {
+      "id": 5,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "title": "asf",
+      "channelName": "dsf",
+      "meta": "100",
+      "categoryId": 2,
+      "categoryName": "Drama"
+    },
+    {
+      "id": 6,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "title": "lll",
+      "channelName": "lll",
+      "meta": "kkk",
+      "categoryId": 1,
+      "categoryName": "Action"
     }
   ]
 }

@@ -5,6 +5,63 @@ function createVideoRouter({ db, normalizeVideo }) {
   //   GET /users/:userId/liked-videos/:videoId  (likedVideoRoutes.js)
   const router = express.Router();
 
+  function resolveCategoryAssignment(payload, categories) {
+    const hasCategory = Object.prototype.hasOwnProperty.call(payload, 'category');
+    const hasCategoryId = Object.prototype.hasOwnProperty.call(payload, 'categoryId');
+
+    if (!hasCategory && !hasCategoryId) {
+      return { mode: 'unchanged' };
+    }
+
+    const rawValue = hasCategory ? payload.category : payload.categoryId;
+
+    if (rawValue === null || rawValue === '') {
+      return { mode: 'clear' };
+    }
+
+    let resolvedId = null;
+
+    if (typeof rawValue === 'number' && Number.isInteger(rawValue)) {
+      resolvedId = rawValue;
+    } else if (typeof rawValue === 'string') {
+      const normalized = rawValue.trim();
+
+      if (!normalized) {
+        return { mode: 'clear' };
+      }
+
+      if (/^\d+$/.test(normalized)) {
+        resolvedId = Number.parseInt(normalized, 10);
+      } else {
+        const matchedByName = categories.find(
+          (c) => c.name.toLowerCase() === normalized.toLowerCase(),
+        );
+
+        if (!matchedByName) {
+          return { error: `Category \"${normalized}\" not found.` };
+        }
+
+        resolvedId = matchedByName.id;
+      }
+    } else {
+      return { error: 'category must be a category id (number) or category name (string).' };
+    }
+
+    const exists = categories.some((c) => c.id === resolvedId);
+
+    if (!exists) {
+      return { error: `Category with ID ${resolvedId} not found.` };
+    }
+
+    const resolvedCategory = categories.find((c) => c.id === resolvedId);
+
+    return {
+      mode: 'set',
+      categoryId: resolvedId,
+      categoryName: resolvedCategory?.name ?? null,
+    };
+  }
+
   router.get('/videos/:videoId/is-liked', async (req, res) => {
     const videoId = Number.parseInt(req.params.videoId, 10);
 
@@ -115,6 +172,19 @@ function createVideoRouter({ db, normalizeVideo }) {
   router.get('/get-videos-paginated', async (req, res) => {
     const page = Number.parseInt(req.query.page, 10) || 1;
     const limit = Number.parseInt(req.query.limit, 10) || 10;
+    const hasCategoryId = Object.prototype.hasOwnProperty.call(req.query, 'categoryId');
+
+    let categoryId = null;
+
+    if (hasCategoryId) {
+      categoryId = Number.parseInt(req.query.categoryId, 10);
+
+      if (Number.isNaN(categoryId) || categoryId < 1) {
+        return res.status(400).json({
+          error: 'categoryId must be a positive integer when provided.',
+        });
+      }
+    }
 
     if (page < 1 || limit < 1) {
       return res.status(400).json({
@@ -127,13 +197,29 @@ function createVideoRouter({ db, normalizeVideo }) {
 
     await db.read();
     const videos = db.data.videos ?? [];
-    const total = videos.length;
+    const categories = db.data.categories ?? [];
+
+    if (hasCategoryId) {
+      const categoryExists = categories.some((category) => category.id === categoryId);
+
+      if (!categoryExists) {
+        return res.status(404).json({
+          error: `Category with ID ${categoryId} not found.`,
+        });
+      }
+    }
+
+    const filteredVideos = hasCategoryId
+      ? videos.filter((video) => video.categoryId === categoryId)
+      : videos;
+    const total = filteredVideos.length;
     const totalPages = Math.max(1, Math.ceil(total / safeLimit));
-    const data = videos.slice(offset, offset + safeLimit);
+    const data = filteredVideos.slice(offset, offset + safeLimit);
 
     return res.json({
       page,
       limit: safeLimit,
+      ...(hasCategoryId && { categoryId }),
       total,
       totalPages,
       hasNextPage: page < totalPages,
@@ -173,10 +259,23 @@ function createVideoRouter({ db, normalizeVideo }) {
     }
 
     await db.read();
+    const categoryResolution = resolveCategoryAssignment(req.body ?? {}, db.data.categories ?? []);
+
+    if (categoryResolution.error) {
+      return res.status(400).json({ error: categoryResolution.error });
+    }
+
     const nextId = db.data.videos.length > 0
       ? Math.max(...db.data.videos.map((v) => v.id || 0)) + 1
       : 1;
-    const videoWithId = { id: nextId, ...result.video };
+    const videoWithId = {
+      id: nextId,
+      ...result.video,
+      ...(categoryResolution.mode === 'set' && {
+        categoryId: categoryResolution.categoryId,
+        categoryName: categoryResolution.categoryName,
+      }),
+    };
     db.data.videos.push(videoWithId);
     await db.write();
 
@@ -205,6 +304,12 @@ function createVideoRouter({ db, normalizeVideo }) {
     }
 
     await db.read();
+    const categoryResolution = resolveCategoryAssignment(req.body ?? {}, db.data.categories ?? []);
+
+    if (categoryResolution.error) {
+      return res.status(400).json({ error: categoryResolution.error });
+    }
+
     const videoIndex = db.data.videos.findIndex((v) => v.id === videoId);
 
     if (videoIndex === -1) {
@@ -213,7 +318,14 @@ function createVideoRouter({ db, normalizeVideo }) {
       });
     }
 
-    db.data.videos[videoIndex] = { id: videoId, ...result.video };
+    const updatedVideo = { id: videoId, ...result.video };
+
+    if (categoryResolution.mode === 'set') {
+      updatedVideo.categoryId = categoryResolution.categoryId;
+      updatedVideo.categoryName = categoryResolution.categoryName;
+    }
+
+    db.data.videos[videoIndex] = updatedVideo;
     await db.write();
 
     return res.json(db.data.videos[videoIndex]);

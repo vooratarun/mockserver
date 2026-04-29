@@ -7,6 +7,8 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const { createUserRouter } = require('./routes/userRoutes');
 const { createVideoRouter } = require('./routes/videoRoutes');
 const { createLikedVideoRouter } = require('./routes/likedVideoRoutes');
+const { createCategoryRouter } = require('./routes/categoryRoutes');
+const { createCommentsRouter } = require('./routes/commentsRoutes');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mockserver_dev_secret';
 const JWT_EXPIRES_IN = '24h';
@@ -15,7 +17,7 @@ const revokedTokens = new Set();
 
 const port = process.env.PORT || 3000;
 const dbFile = process.env.DB_FILE || path.join(__dirname, 'db.json');
-const defaultData = { users: [], videos: [], likedVideos: [] };
+const defaultData = { users: [], videos: [], likedVideos: [], categories: [], comments: [] };
 const requiredVideoFields = [
   'thumbnailUrl',
   'authorImageUrl',
@@ -80,6 +82,8 @@ const swaggerSpec = swaggerJsdoc({
             title:          { type: 'string',  example: 'JavaScript Fundamentals' },
             channelName:    { type: 'string',  example: 'FutureCoders' },
             meta:           { type: 'string',  example: '10M Views • 3 Months Ago' },
+            categoryId:     { type: 'integer', example: 1 },
+            categoryName:   { type: 'string',  example: 'Action' },
           },
         },
         VideoInput: {
@@ -91,6 +95,44 @@ const swaggerSpec = swaggerJsdoc({
             title:          { type: 'string' },
             channelName:    { type: 'string' },
             meta:           { type: 'string' },
+            category:       { type: 'string', example: 'Action', description: 'Optional category name or category id as string' },
+            categoryId:     { type: 'integer', example: 1, description: 'Optional category id. If both provided, category takes precedence' },
+            categoryName:   { type: 'string', description: 'Read-only: auto-populated from category lookup' },
+          },
+        },
+        Category: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            name: { type: 'string', example: 'Technology' },
+            description: { type: 'string', example: 'All tech related videos' },
+          },
+        },
+        CategoryInput: {
+          type: 'object',
+          required: ['name'],
+          properties: {
+            name: { type: 'string', example: 'Technology' },
+            description: { type: 'string', example: 'All tech related videos' },
+          },
+        },
+        Comment: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            videoId: { type: 'integer', example: 1 },
+            userId: { type: 'integer', example: 1 },
+            username: { type: 'string', example: 'admin' },
+            text: { type: 'string', example: 'Great video!' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        CommentInput: {
+          type: 'object',
+          required: ['text'],
+          properties: {
+            text: { type: 'string', example: 'Great video!' },
           },
         },
         Error: {
@@ -102,6 +144,55 @@ const swaggerSpec = swaggerJsdoc({
       },
     },
     paths: {
+      '/register': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Register a new user',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['username', 'password', 'name'],
+                  properties: {
+                    username: { type: 'string', example: 'newuser' },
+                    password: { type: 'string', example: 'newuser123' },
+                    name: { type: 'string', example: 'New User' },
+                    role: { type: 'string', enum: ['user', 'admin'], default: 'user', example: 'user' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            201: {
+              description: 'User registered successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      message: { type: 'string' },
+                      user: {
+                        type: 'object',
+                        properties: {
+                          id: { type: 'integer' },
+                          username: { type: 'string' },
+                          name: { type: 'string' },
+                          role: { type: 'string', enum: ['user', 'admin'] },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            409: { description: 'Username already exists', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
       '/login': {
         post: {
           tags: ['Auth'],
@@ -137,6 +228,7 @@ const swaggerSpec = swaggerJsdoc({
                           id:       { type: 'integer' },
                           username: { type: 'string' },
                           name:     { type: 'string' },
+                          role:     { type: 'string', enum: ['user', 'admin'] },
                         },
                       },
                     },
@@ -158,6 +250,202 @@ const swaggerSpec = swaggerJsdoc({
             200: { description: 'Logout successful' },
             400: { description: 'Missing Authorization header', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
             401: { description: 'Token invalid or expired',   content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/change-password': {
+        post: {
+          tags: ['Auth'],
+          summary: 'Change password for the logged-in user',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['oldPassword', 'newPassword'],
+                  properties: {
+                    oldPassword: { type: 'string', example: 'admin123' },
+                    newPassword: { type: 'string', example: 'admin1234' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: { description: 'Password changed successfully' },
+            400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized or old password mismatch', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/categories': {
+        get: {
+          tags: ['Categories'],
+          summary: 'Get all categories',
+          responses: {
+            200: {
+              description: 'Array of categories',
+              content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Category' } } } },
+            },
+          },
+        },
+        post: {
+          tags: ['Categories'],
+          summary: 'Create a category',
+          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CategoryInput' } } } },
+          responses: {
+            201: { description: 'Created category', content: { 'application/json': { schema: { $ref: '#/components/schemas/Category' } } } },
+            400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            409: { description: 'Duplicate category name', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/categories/{id}': {
+        get: {
+          tags: ['Categories'],
+          summary: 'Get category by ID',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Category ID' }],
+          responses: {
+            200: { description: 'Category object', content: { 'application/json': { schema: { $ref: '#/components/schemas/Category' } } } },
+            400: { description: 'Invalid ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        put: {
+          tags: ['Categories'],
+          summary: 'Update category by ID',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Category ID' }],
+          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CategoryInput' } } } },
+          responses: {
+            200: { description: 'Updated category', content: { 'application/json': { schema: { $ref: '#/components/schemas/Category' } } } },
+            400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            409: { description: 'Duplicate category name', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        delete: {
+          tags: ['Categories'],
+          summary: 'Delete category by ID and detach it from linked videos',
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Category ID' }],
+          responses: {
+            200: { description: 'Delete result' },
+            400: { description: 'Invalid ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/videos/{videoId}/category/{categoryId}': {
+        put: {
+          tags: ['Categories'],
+          summary: 'Assign a category to a video',
+          parameters: [
+            { name: 'videoId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Video ID' },
+            { name: 'categoryId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Category ID' },
+          ],
+          responses: {
+            200: { description: 'Category assigned successfully' },
+            400: { description: 'Invalid IDs', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Video or category not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/videos/{videoId}/category': {
+        get: {
+          tags: ['Categories'],
+          summary: 'Get the category associated with a video',
+          parameters: [{ name: 'videoId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Video ID' }],
+          responses: {
+            200: { description: 'Associated category or null' },
+            400: { description: 'Invalid ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Video not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        delete: {
+          tags: ['Categories'],
+          summary: 'Remove category association from a video',
+          parameters: [{ name: 'videoId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Video ID' }],
+          responses: {
+            200: { description: 'Category removed from video' },
+            400: { description: 'Invalid ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Video or association not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/categories/{categoryId}/videos': {
+        get: {
+          tags: ['Categories'],
+          summary: 'Get all videos in a category',
+          parameters: [{ name: 'categoryId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Category ID' }],
+          responses: {
+            200: { description: 'Category with its videos' },
+            400: { description: 'Invalid ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Category not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/videos/{videoId}/comments': {
+        get: {
+          tags: ['Comments'],
+          summary: 'Get all comments for a video',
+          parameters: [{ name: 'videoId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Video ID' }],
+          responses: {
+            200: { description: 'Array of comments', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Comment' } } } } },
+            400: { description: 'Invalid video ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Video not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        post: {
+          tags: ['Comments'],
+          summary: 'Create a comment on a video (auth required)',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'videoId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Video ID' }],
+          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CommentInput' } } } },
+          responses: {
+            201: { description: 'Comment created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Comment' } } } },
+            400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Video not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/comments/{commentId}': {
+        get: {
+          tags: ['Comments'],
+          summary: 'Get a comment by ID',
+          parameters: [{ name: 'commentId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Comment ID' }],
+          responses: {
+            200: { description: 'Comment object', content: { 'application/json': { schema: { $ref: '#/components/schemas/Comment' } } } },
+            400: { description: 'Invalid ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        put: {
+          tags: ['Comments'],
+          summary: 'Update a comment (auth required, user must be comment owner)',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'commentId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Comment ID' }],
+          requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CommentInput' } } } },
+          responses: {
+            200: { description: 'Updated comment', content: { 'application/json': { schema: { $ref: '#/components/schemas/Comment' } } } },
+            400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden (not comment owner)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Comment not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        delete: {
+          tags: ['Comments'],
+          summary: 'Delete a comment (auth required, user must be comment owner)',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'commentId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Comment ID' }],
+          responses: {
+            200: { description: 'Comment deleted', content: { 'application/json': { schema: { type: 'object', properties: { message: { type: 'string' }, comment: { $ref: '#/components/schemas/Comment' } } } } } },
+            400: { description: 'Invalid ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden (not comment owner)', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Comment not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           },
         },
       },
@@ -256,10 +544,11 @@ const swaggerSpec = swaggerJsdoc({
       '/get-videos-paginated': {
         get: {
           tags: ['Videos'],
-          summary: 'Get videos with pagination',
+          summary: 'Get videos with pagination (optionally filtered by categoryId)',
           parameters: [
             { name: 'page',  in: 'query', schema: { type: 'integer', default: 1  }, description: 'Page number (1-based)' },
             { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 }, description: 'Items per page (max 100)' },
+            { name: 'categoryId', in: 'query', schema: { type: 'integer' }, description: 'Optional category ID to filter videos' },
           ],
           responses: {
             200: {
@@ -271,6 +560,7 @@ const swaggerSpec = swaggerJsdoc({
                     properties: {
                       page:        { type: 'integer' },
                       limit:       { type: 'integer' },
+                      categoryId:  { type: 'integer' },
                       total:       { type: 'integer' },
                       totalPages:  { type: 'integer' },
                       hasNextPage: { type: 'boolean' },
@@ -282,6 +572,7 @@ const swaggerSpec = swaggerJsdoc({
               },
             },
             400: { description: 'Invalid pagination params', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Category not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
           },
         },
       },
@@ -456,6 +747,17 @@ async function startServer() {
   }));
 
   app.use(createLikedVideoRouter({
+    db,
+    jwt,
+    JWT_SECRET,
+    revokedTokens,
+  }));
+
+  app.use(createCategoryRouter({
+    db,
+  }));
+
+  app.use(createCommentsRouter({
     db,
     jwt,
     JWT_SECRET,
