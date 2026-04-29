@@ -6,6 +6,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const { createUserRouter } = require('./routes/userRoutes');
 const { createVideoRouter } = require('./routes/videoRoutes');
+const { createLikedVideoRouter } = require('./routes/likedVideoRoutes');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mockserver_dev_secret';
 const JWT_EXPIRES_IN = '24h';
@@ -14,7 +15,7 @@ const revokedTokens = new Set();
 
 const port = process.env.PORT || 3000;
 const dbFile = process.env.DB_FILE || path.join(__dirname, 'db.json');
-const defaultData = { users: [], videos: [] };
+const defaultData = { users: [], videos: [], likedVideos: [] };
 const requiredVideoFields = [
   'thumbnailUrl',
   'authorImageUrl',
@@ -160,6 +161,74 @@ const swaggerSpec = swaggerJsdoc({
           },
         },
       },
+      '/videos/liked-status': {
+        post: {
+          tags: ['Videos'],
+          summary: 'Batch check liked/not-liked status of videos for a user',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['userId', 'videoIds'],
+                  properties: {
+                    userId:   { type: 'integer', example: 1 },
+                    videoIds: { type: 'array', items: { type: 'integer' }, example: [3, 4, 5] },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            200: {
+              description: 'Videos split into liked and notLiked arrays',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      userId:   { type: 'integer' },
+                      liked:    { type: 'array', items: { $ref: '#/components/schemas/Video' } },
+                      notLiked: { type: 'array', items: { $ref: '#/components/schemas/Video' } },
+                      notFound: { type: 'array', items: { type: 'integer' }, description: 'videoIds that do not exist in the DB' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Validation error', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/videos/{videoId}/is-liked': {
+        get: {
+          tags: ['Videos'],
+          summary: 'Check whether a video is liked by a specific user (no auth required)',
+          parameters: [
+            { name: 'videoId', in: 'path',  required: true, schema: { type: 'integer' }, description: 'Video ID' },
+            { name: 'userId',  in: 'query', required: true, schema: { type: 'integer' }, description: 'User ID'  },
+          ],
+          responses: {
+            200: {
+              description: 'Liked status',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      userId:  { type: 'integer' },
+                      videoId: { type: 'integer' },
+                      liked:   { type: 'boolean' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid params', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
       '/get-videos': {
         get: {
           tags: ['Videos'],
@@ -287,6 +356,69 @@ const swaggerSpec = swaggerJsdoc({
           },
         },
       },
+      '/users/{userId}/liked-videos': {
+        get: {
+          tags: ['Liked Videos'],
+          summary: 'Get all liked videos for a user',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID' }],
+          responses: {
+            200: { description: 'Array of liked videos', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Video' } } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden',    content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/users/{userId}/liked-videos/{videoId}': {
+        get: {
+          tags: ['Liked Videos'],
+          summary: 'Check if a video is liked by a user',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'userId',  in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID'  },
+            { name: 'videoId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Video ID' },
+          ],
+          responses: {
+            200: {
+              description: 'Liked status',
+              content: { 'application/json': { schema: { type: 'object', properties: { liked: { type: 'boolean' } } } } },
+            },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden',    content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        post: {
+          tags: ['Liked Videos'],
+          summary: 'Like a video for a user',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'userId',  in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID'  },
+            { name: 'videoId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Video ID' },
+          ],
+          responses: {
+            201: { description: 'Video liked',          content: { 'application/json': { schema: { type: 'object', properties: { message: { type: 'string' }, video: { $ref: '#/components/schemas/Video' } } } } } },
+            200: { description: 'Already liked',        content: { 'application/json': { schema: { type: 'object', properties: { message: { type: 'string' }, video: { $ref: '#/components/schemas/Video' } } } } } },
+            401: { description: 'Unauthorized',         content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden',            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Video not found',      content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        delete: {
+          tags: ['Liked Videos'],
+          summary: 'Unlike a video for a user',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'userId',  in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID'  },
+            { name: 'videoId', in: 'path', required: true, schema: { type: 'integer' }, description: 'Video ID' },
+          ],
+          responses: {
+            200: { description: 'Video unliked',        content: { 'application/json': { schema: { type: 'object', properties: { message: { type: 'string' } } } } } },
+            401: { description: 'Unauthorized',         content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden',            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Entry not found',      content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
     },
   },
   apis: [],
@@ -321,6 +453,13 @@ async function startServer() {
   app.use(createVideoRouter({
     db,
     normalizeVideo,
+  }));
+
+  app.use(createLikedVideoRouter({
+    db,
+    jwt,
+    JWT_SECRET,
+    revokedTokens,
   }));
 
   app.listen(port, () => {

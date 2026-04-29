@@ -1,7 +1,90 @@
 const express = require('express');
 
 function createVideoRouter({ db, normalizeVideo }) {
+  // NOTE: a JWT-protected version of this check also lives at
+  //   GET /users/:userId/liked-videos/:videoId  (likedVideoRoutes.js)
   const router = express.Router();
+
+  router.get('/videos/:videoId/is-liked', async (req, res) => {
+    const videoId = Number.parseInt(req.params.videoId, 10);
+
+    if (Number.isNaN(videoId)) {
+      return res.status(400).json({ error: 'Invalid video ID. ID must be a number.' });
+    }
+
+    const userId = Number.parseInt(req.query.userId, 10);
+
+    if (Number.isNaN(userId)) {
+      return res.status(400).json({ error: 'userId query param is required and must be a number.' });
+    }
+
+    await db.read();
+
+    const liked = (db.data.likedVideos ?? []).some(
+      (lv) => lv.userId === userId && lv.videoId === videoId,
+    );
+
+    return res.json({ userId, videoId, liked });
+  });
+
+  // POST /videos/liked-status
+  // Body: { "userId": 1, "videoIds": [3, 4, 5] }
+  // Returns liked and notLiked arrays with full video objects.
+  router.post('/videos/liked-status', async (req, res) => {
+    const { userId, videoIds } = req.body ?? {};
+
+    if (!userId || typeof userId !== 'number') {
+      return res.status(400).json({ error: 'userId is required and must be a number.' });
+    }
+
+    if (!Array.isArray(videoIds) || videoIds.length === 0) {
+      return res.status(400).json({ error: 'videoIds must be a non-empty array of numbers.' });
+    }
+
+    const invalidIds = videoIds.filter((id) => typeof id !== 'number' || !Number.isInteger(id));
+    if (invalidIds.length > 0) {
+      return res.status(400).json({
+        error: 'All entries in videoIds must be integers.',
+        invalidIds,
+      });
+    }
+
+    await db.read();
+
+    const likedSet = new Set(
+      (db.data.likedVideos ?? [])
+        .filter((lv) => lv.userId === userId)
+        .map((lv) => lv.videoId),
+    );
+
+    const videosMap = new Map(
+      (db.data.videos ?? []).map((v) => [v.id, v]),
+    );
+
+    const liked = [];
+    const notLiked = [];
+    const notFound = [];
+
+    for (const videoId of videoIds) {
+      const video = videosMap.get(videoId);
+      if (!video) {
+        notFound.push(videoId);
+        continue;
+      }
+      if (likedSet.has(videoId)) {
+        liked.push(video);
+      } else {
+        notLiked.push(video);
+      }
+    }
+
+    return res.json({
+      userId,
+      liked,
+      notLiked,
+      ...(notFound.length > 0 && { notFound }),
+    });
+  });
 
   router.get('/get-videos', async (_req, res) => {
     await db.read();
