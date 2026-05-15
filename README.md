@@ -71,6 +71,16 @@ Base URL: `http://localhost:3000`
   - Query params:
     - `q` (string, required)
 
+- `POST /videos/by-ids`
+  - Description: Get video details for multiple video IDs
+  - Request body:
+    ```json
+    {
+      "videoIds": [1, 2, 99]
+    }
+    ```
+  - Success response: `{ "videos": [...], "missingIds": [99] }`
+
 - `POST /videos`
   - Description: Create new video
   - Request body:
@@ -78,6 +88,7 @@ Base URL: `http://localhost:3000`
     {
       "thumbnailUrl": "https://example.com/thumb.jpg",
       "authorImageUrl": "https://example.com/author.jpg",
+      "videoSourceUrl": "https://cdn.example.com/videos/sample.mp4",
       "title": "Video title",
       "channelName": "Channel name",
       "meta": "10K Views • 2 Days Ago"
@@ -97,6 +108,73 @@ Base URL: `http://localhost:3000`
   - Description: Delete a video by id
   - Path params:
     - `id` (number)
+
+### Playlist Routes
+
+- `GET /users/:userId/playlists`
+  - Description: Get all playlists for a user
+  - Headers: `Authorization: Bearer <token>`
+
+- `POST /users/:userId/playlists`
+  - Description: Create playlist for a user
+  - Headers: `Authorization: Bearer <token>`
+  - Request body:
+    ```json
+    {
+      "name": "My Favorites",
+      "description": "Videos to watch later"
+    }
+    ```
+
+- `POST /users/:userId/playlists/:playlistId/videos/:videoId`
+  - Description: Add a video to a playlist
+  - Headers: `Authorization: Bearer <token>`
+
+- `DELETE /users/:userId/playlists/:playlistId`
+  - Description: Delete a playlist of a user
+  - Headers: `Authorization: Bearer <token>`
+
+- `GET /users/:userId/playlists/:playlistId/videos`
+  - Description: Get all videos in a playlist
+  - Headers: `Authorization: Bearer <token>`
+
+- `DELETE /users/:userId/playlists/:playlistId/videos/:videoId`
+  - Description: Remove a video from a playlist
+  - Headers: `Authorization: Bearer <token>`
+
+### Watch History Routes
+
+- `GET /users/:userId/watch-history`
+  - Description: Get user watch history (newest first)
+  - Headers: `Authorization: Bearer <token>`
+
+- `POST /users/:userId/watch-history/:videoId`
+  - Description: Save or refresh a watched video in user watch history
+  - Headers: `Authorization: Bearer <token>`
+
+- `DELETE /users/:userId/watch-history/:videoId`
+  - Description: Remove a watched video from user watch history
+  - Headers: `Authorization: Bearer <token>`
+
+### User Settings Routes
+
+- `GET /users/:userId/settings`
+  - Description: Get user settings (creates defaults on first access)
+  - Headers: `Authorization: Bearer <token>`
+
+- `PUT /users/:userId/settings`
+  - Description: Update user settings
+  - Headers: `Authorization: Bearer <token>`
+  - Request body (partial update):
+    ```json
+    {
+      "theme": "dark",
+      "language": "en",
+      "autoplay": false,
+      "emailNotifications": true,
+      "pushNotifications": false
+    }
+    ```
 
 ## Run
 

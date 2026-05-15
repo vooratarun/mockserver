@@ -143,6 +143,50 @@ function createVideoRouter({ db, normalizeVideo }) {
     });
   });
 
+  // POST /videos/by-ids
+  // Body: { "videoIds": [1, 2, 3] }
+  // Returns matching videos in request order plus missingIds for unknown IDs.
+  router.post('/videos/by-ids', async (req, res) => {
+    const { videoIds } = req.body ?? {};
+
+    if (!Array.isArray(videoIds) || videoIds.length === 0) {
+      return res.status(400).json({
+        error: 'videoIds must be a non-empty array of numbers.',
+      });
+    }
+
+    const invalidIds = videoIds.filter((id) => typeof id !== 'number' || !Number.isInteger(id));
+
+    if (invalidIds.length > 0) {
+      return res.status(400).json({
+        error: 'All entries in videoIds must be integers.',
+        invalidIds,
+      });
+    }
+
+    await db.read();
+
+    const videosMap = new Map((db.data.videos ?? []).map((video) => [video.id, video]));
+    const videos = [];
+    const missingIds = [];
+
+    for (const videoId of videoIds) {
+      const video = videosMap.get(videoId);
+
+      if (!video) {
+        missingIds.push(videoId);
+        continue;
+      }
+
+      videos.push(video);
+    }
+
+    return res.json({
+      videos,
+      ...(missingIds.length > 0 && { missingIds }),
+    });
+  });
+
   router.get('/get-videos', async (_req, res) => {
     await db.read();
     res.json(db.data.videos ?? []);
@@ -246,6 +290,31 @@ function createVideoRouter({ db, normalizeVideo }) {
     });
 
     return res.json(results);
+  });
+
+  router.get('/trending-videos', async (req, res) => {
+    let limit = Number.parseInt(req.query.limit, 10) || 5;
+
+    if (limit < 1 || limit > 100) {
+      limit = 5;
+    }
+
+    await db.read();
+    const videos = db.data.videos ?? [];
+
+    if (videos.length === 0) {
+      return res.json({ trendingVideoIds: [] });
+    }
+
+    // Fisher-Yates shuffle algorithm
+    const shuffled = [...videos];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    const trendingVideoIds = shuffled.slice(0, limit).map((v) => v.id);
+    return res.json({ trendingVideoIds });
   });
 
   const createVideo = async (req, res) => {
