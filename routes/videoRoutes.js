@@ -192,6 +192,25 @@ function createVideoRouter({ db, normalizeVideo }) {
     res.json(db.data.videos ?? []);
   });
 
+  router.get('/users/:userId/videos', async (req, res) => {
+    const userId = Number.parseInt(req.params.userId, 10);
+
+    if (Number.isNaN(userId) || userId < 1) {
+      return res.status(400).json({
+        error: 'Invalid user ID. ID must be a positive number.',
+      });
+    }
+
+    await db.read();
+    const videos = (db.data.videos ?? []).filter((video) => video.userId === userId);
+
+    return res.json({
+      userId,
+      total: videos.length,
+      videos,
+    });
+  });
+
   router.get('/get-video/:id', async (req, res) => {
     const videoId = Number.parseInt(req.params.id, 10);
 
@@ -293,7 +312,7 @@ function createVideoRouter({ db, normalizeVideo }) {
   });
 
   router.get('/trending-videos', async (req, res) => {
-    let limit = Number.parseInt(req.query.limit, 10) || 5;
+    let limit = Number.parseInt(req.query.limit, 4) || 5;
 
     if (limit < 1 || limit > 100) {
       limit = 5;
@@ -388,6 +407,11 @@ function createVideoRouter({ db, normalizeVideo }) {
     }
 
     const updatedVideo = { id: videoId, ...result.video };
+
+    if (!Object.prototype.hasOwnProperty.call(result.video, 'userId')
+      && Object.prototype.hasOwnProperty.call(db.data.videos[videoIndex], 'userId')) {
+      updatedVideo.userId = db.data.videos[videoIndex].userId;
+    }
 
     if (categoryResolution.mode === 'set') {
       updatedVideo.categoryId = categoryResolution.categoryId;

@@ -12,6 +12,7 @@ const { createCommentsRouter } = require('./routes/commentsRoutes');
 const { createPlaylistRouter } = require('./routes/playlistRoutes');
 const { createWatchHistoryRouter } = require('./routes/watchHistoryRoutes');
 const { createUserSettingsRouter } = require('./routes/userSettingsRoutes');
+const { createChannelSubscriptionRouter } = require('./routes/channelSubscriptionRoutes');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'mockserver_dev_secret';
 const JWT_EXPIRES_IN = '24h';
@@ -20,7 +21,17 @@ const revokedTokens = new Set();
 
 const port = process.env.PORT || 3000;
 const dbFile = process.env.DB_FILE || path.join(__dirname, 'db.json');
-const defaultData = { users: [], videos: [], likedVideos: [], categories: [], comments: [], playlists: [], watchHistory: [], userSettings: [] };
+const defaultData = {
+  users: [],
+  videos: [],
+  likedVideos: [],
+  categories: [],
+  comments: [],
+  playlists: [],
+  watchHistory: [],
+  userSettings: [],
+  channelSubscriptions: [],
+};
 const requiredVideoFields = [
   'thumbnailUrl',
   'authorImageUrl',
@@ -52,6 +63,14 @@ function normalizeVideo(payload) {
     };
   }
 
+  if (Object.prototype.hasOwnProperty.call(payload, 'userId')) {
+    if (!Number.isInteger(payload.userId) || payload.userId < 1) {
+      return {
+        error: 'userId must be a positive integer when provided.',
+      };
+    }
+  }
+
   return {
     video: {
       thumbnailUrl: payload.thumbnailUrl.trim(),
@@ -60,6 +79,7 @@ function normalizeVideo(payload) {
       title: payload.title.trim(),
       channelName: payload.channelName.trim(),
       meta: payload.meta.trim(),
+      ...(Object.prototype.hasOwnProperty.call(payload, 'userId') && { userId: payload.userId }),
     },
   };
 }
@@ -82,6 +102,7 @@ const swaggerSpec = swaggerJsdoc({
           type: 'object',
           properties: {
             id:             { type: 'integer', example: 1 },
+            userId:         { type: 'integer', example: 2, description: 'Optional owner/creator user ID' },
             thumbnailUrl:   { type: 'string',  example: 'https://img.youtube.com/vi/abc/maxresdefault.jpg' },
             authorImageUrl: { type: 'string',  example: '/profile.png' },
             videoSourceUrl: { type: 'string',  example: 'https://cdn.example.com/videos/abc.mp4' },
@@ -96,6 +117,7 @@ const swaggerSpec = swaggerJsdoc({
           type: 'object',
           required: ['thumbnailUrl', 'authorImageUrl', 'videoSourceUrl', 'title', 'channelName', 'meta'],
           properties: {
+            userId:         { type: 'integer', example: 2, description: 'Optional owner/creator user ID' },
             thumbnailUrl:   { type: 'string' },
             authorImageUrl: { type: 'string' },
             videoSourceUrl: { type: 'string' },
@@ -194,6 +216,15 @@ const swaggerSpec = swaggerJsdoc({
             autoplay: { type: 'boolean' },
             emailNotifications: { type: 'boolean' },
             pushNotifications: { type: 'boolean' },
+          },
+        },
+        ChannelSubscription: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer', example: 1 },
+            userId: { type: 'integer', example: 1 },
+            channelName: { type: 'string', example: 'FutureCoders' },
+            subscribedAt: { type: 'string', format: 'date-time' },
           },
         },
         Error: {
@@ -839,6 +870,31 @@ const swaggerSpec = swaggerJsdoc({
           },
         },
       },
+      '/users/{userId}/videos': {
+        get: {
+          tags: ['Videos'],
+          summary: 'Get videos created by a user ID',
+          parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID' }],
+          responses: {
+            200: {
+              description: 'Videos created by the user',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      userId: { type: 'integer' },
+                      total: { type: 'integer' },
+                      videos: { type: 'array', items: { $ref: '#/components/schemas/Video' } },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid user ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
       '/get-video/{id}': {
         get: {
           tags: ['Videos'],
@@ -1042,6 +1098,168 @@ const swaggerSpec = swaggerJsdoc({
           },
         },
       },
+      '/users/{userId}/subscribed-channels': {
+        get: {
+          tags: ['Channel Subscriptions'],
+          summary: 'Get all subscribed channels for a user',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'userId', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID' },
+          ],
+          responses: {
+            200: {
+              description: 'Array of channel subscriptions',
+              content: {
+                'application/json': {
+                  schema: { type: 'array', items: { $ref: '#/components/schemas/ChannelSubscription' } },
+                },
+              },
+            },
+            400: { description: 'Invalid user ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/users/{userId}/subscribed-channels/{channelName}': {
+        get: {
+          tags: ['Channel Subscriptions'],
+          summary: 'Check if the user is subscribed to a channel',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'userId', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID' },
+            { name: 'channelName', in: 'path', required: true, schema: { type: 'string' }, description: 'Channel name (URL-encoded)' },
+          ],
+          responses: {
+            200: {
+              description: 'Subscription status',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      userId: { type: 'integer' },
+                      channelName: { type: 'string' },
+                      subscribed: { type: 'boolean' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid input', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        post: {
+          tags: ['Channel Subscriptions'],
+          summary: 'Subscribe user to a channel',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'userId', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID' },
+            { name: 'channelName', in: 'path', required: true, schema: { type: 'string' }, description: 'Channel name (URL-encoded)' },
+          ],
+          responses: {
+            201: {
+              description: 'Channel subscribed successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      message: { type: 'string' },
+                      subscription: { $ref: '#/components/schemas/ChannelSubscription' },
+                    },
+                  },
+                },
+              },
+            },
+            200: {
+              description: 'Already subscribed',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      message: { type: 'string' },
+                      subscription: { $ref: '#/components/schemas/ChannelSubscription' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid input', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Channel not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+        delete: {
+          tags: ['Channel Subscriptions'],
+          summary: 'Unsubscribe user from a channel',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'userId', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID' },
+            { name: 'channelName', in: 'path', required: true, schema: { type: 'string' }, description: 'Channel name (URL-encoded)' },
+          ],
+          responses: {
+            200: {
+              description: 'Unsubscribed successfully',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      message: { type: 'string' },
+                      subscription: { $ref: '#/components/schemas/ChannelSubscription' },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid input', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Subscription not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
+      '/users/{userId}/subscribed-channels/{channelName}/videos': {
+        get: {
+          tags: ['Channel Subscriptions'],
+          summary: 'Get all videos for one subscribed channel of a user',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'userId', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID' },
+            { name: 'channelName', in: 'path', required: true, schema: { type: 'string' }, description: 'Channel name (URL-encoded)' },
+          ],
+          responses: {
+            200: {
+              description: 'Videos for the requested subscribed channel',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      userId: { type: 'integer' },
+                      channelName: { type: 'string' },
+                      total: { type: 'integer' },
+                      videos: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/Video' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            400: { description: 'Invalid input', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            401: { description: 'Unauthorized', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            403: { description: 'Forbidden', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+            404: { description: 'Channel or subscription not found', content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } } },
+          },
+        },
+      },
     },
   },
   apis: [],
@@ -1111,6 +1329,13 @@ async function startServer() {
   }));
 
   app.use(createUserSettingsRouter({
+    db,
+    jwt,
+    JWT_SECRET,
+    revokedTokens,
+  }));
+
+  app.use(createChannelSubscriptionRouter({
     db,
     jwt,
     JWT_SECRET,

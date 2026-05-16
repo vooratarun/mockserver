@@ -37,6 +37,16 @@
       "id": 8,
       "userId": 1,
       "videoId": 5
+    },
+    {
+      "id": 9,
+      "userId": 1,
+      "videoId": 1
+    },
+    {
+      "id": 10,
+      "userId": 1,
+      "videoId": 4
     }
   ],
   "comments": [
@@ -107,6 +117,14 @@
       "username": "admin",
       "text": "hh",
       "createdAt": "2026-05-11T14:15:57.820Z"
+    },
+    {
+      "id": 9,
+      "videoId": 1,
+      "userId": 1,
+      "username": "admin",
+      "text": "sdf",
+      "createdAt": "2026-05-16T13:21:58.408Z"
     }
   ],
   "categories": [
@@ -214,6 +232,7 @@
       "title": "lll",
       "channelName": "lll",
       "meta": "kkk",
+      "userId": 1,
       "categoryId": 1,
       "categoryName": "Action"
     },
@@ -226,6 +245,7 @@
       "channelName": "asdf",
       "meta": "lklsdd",
       "categoryId": 1,
+      "userId": 1,
       "categoryName": "Action"
     },
     {
@@ -238,6 +258,41 @@
       "meta": "asdf",
       "categoryId": 1,
       "categoryName": "Action"
+    },
+    {
+      "id": 9,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "videoSourceUrl": "https://picsum.photos/id/237/200/300",
+      "title": "userid",
+      "channelName": "userid",
+      "meta": "10",
+      "userId": 1,
+      "categoryId": 2,
+      "categoryName": "Drama"
+    },
+    {
+      "id": 10,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "videoSourceUrl": "https://picsum.photos/id/237/200/300",
+      "title": "asd",
+      "channelName": "SDFD",
+      "meta": "ASD",
+      "categoryId": 1,
+      "categoryName": "Action"
+    },
+    {
+      "id": 11,
+      "thumbnailUrl": "https://picsum.photos/id/237/200/300",
+      "authorImageUrl": "https://picsum.photos/id/237/200/300",
+      "videoSourceUrl": "https://picsum.photos/id/237/200/300",
+      "title": "asd",
+      "channelName": "sd",
+      "meta": "asdad",
+      "userId": 1,
+      "categoryId": 7,
+      "categoryName": "asdfasdf"
     }
   ],
   "playlists": [
@@ -313,18 +368,53 @@
       "userId": 1,
       "videoId": 2,
       "watchedAt": "2026-05-11T14:19:32.347Z"
+    },
+    {
+      "id": 3,
+      "userId": 1,
+      "videoId": 11,
+      "watchedAt": "2026-05-16T13:03:18.634Z"
+    },
+    {
+      "id": 4,
+      "userId": 1,
+      "videoId": 7,
+      "watchedAt": "2026-05-16T13:08:15.857Z"
     }
   ],
   "userSettings": [
     {
       "userId": 1,
-      "theme": "light",
-      "language": "zh",
+      "theme": "dark",
+      "language": "fr",
       "autoplay": true,
       "emailNotifications": true,
       "pushNotifications": false,
       "createdAt": "2026-04-29T16:57:08.885Z",
-      "updatedAt": "2026-04-29T16:57:40.380Z"
+      "updatedAt": "2026-05-16T10:54:01.508Z"
+    }
+  ],
+  "channelSubscriptions": [
+    {
+      "id": 2,
+      "userId": 1,
+      "channelName": "fantasy",
+      "normalizedChannelName": "fantasy",
+      "subscribedAt": "2026-05-16T11:37:22.838Z"
+    },
+    {
+      "id": 3,
+      "userId": 1,
+      "channelName": "asdf",
+      "normalizedChannelName": "asdf",
+      "subscribedAt": "2026-05-16T11:45:40.227Z"
+    },
+    {
+      "id": 4,
+      "userId": 1,
+      "channelName": "channel1",
+      "normalizedChannelName": "channel1",
+      "subscribedAt": "2026-05-16T13:22:00.786Z"
     }
   ]
 }

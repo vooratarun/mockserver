@@ -51,6 +51,11 @@ Base URL: `http://localhost:3000`
 - `GET /get-videos`
   - Description: Get all videos
 
+- `GET /users/:userId/videos`
+  - Description: Get all videos created by a specific user
+  - Path params:
+    - `userId` (number)
+
 - `GET /get-video/:id`
   - Description: Get one video by id
   - Path params:
@@ -86,6 +91,7 @@ Base URL: `http://localhost:3000`
   - Request body:
     ```json
     {
+      "userId": 2,
       "thumbnailUrl": "https://example.com/thumb.jpg",
       "authorImageUrl": "https://example.com/author.jpg",
       "videoSourceUrl": "https://cdn.example.com/videos/sample.mp4",
@@ -94,6 +100,7 @@ Base URL: `http://localhost:3000`
       "meta": "10K Views • 2 Days Ago"
     }
     ```
+  - `userId` is optional. When provided, it must be a positive integer.
 
 - `POST /add-video`
   - Description: Alias of `POST /videos` (same behavior and body)
@@ -103,6 +110,7 @@ Base URL: `http://localhost:3000`
   - Path params:
     - `id` (number)
   - Request body: same as `POST /videos`
+  - If `userId` is omitted during update, the existing stored `userId` is preserved.
 
 - `DELETE /delete-video/:id`
   - Description: Delete a video by id
@@ -175,6 +183,28 @@ Base URL: `http://localhost:3000`
       "pushNotifications": false
     }
     ```
+
+### Channel Subscription Routes
+
+- `GET /users/:userId/subscribed-channels`
+  - Description: Get all channels subscribed by the user
+  - Headers: `Authorization: Bearer <token>`
+
+- `GET /users/:userId/subscribed-channels/:channelName`
+  - Description: Check whether user is subscribed to a channel
+  - Headers: `Authorization: Bearer <token>`
+
+- `GET /users/:userId/subscribed-channels/:channelName/videos`
+  - Description: Get all videos for one subscribed channel of the user
+  - Headers: `Authorization: Bearer <token>`
+
+- `POST /users/:userId/subscribed-channels/:channelName`
+  - Description: Subscribe user to a channel (idempotent)
+  - Headers: `Authorization: Bearer <token>`
+
+- `DELETE /users/:userId/subscribed-channels/:channelName`
+  - Description: Unsubscribe user from a channel
+  - Headers: `Authorization: Bearer <token>`
 
 ## Run
 
